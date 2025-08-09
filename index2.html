@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodeLive Pro - 实时HTML编辑器</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            /* 明亮主题变量 */
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --bg-color: #f5f7fa;
+            --text-color: #333;
+            --panel-bg: #ffffff;
+            --border-color: #e0e6ed;
+            --shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+            --tab-bg: #f0f2f5;
+            --tab-active-bg: #ffffff;
+            --button-bg: #3498db;
+            --button-hover: #2980b9;
+            --success-color: #2ecc71;
+            --warning-color: #f39c12;
+            --error-color: #e74c3c;
+        }
+        
+        .dark-theme {
+            /* 暗黑主题变量 */
+            --primary-color: #1a1a2e;
+            --secondary-color: #4a6583;
+            --accent-color: #c0392b;
+            --bg-color: #121212;
+            --text-color: #e0e0e0;
+            --panel-bg: #1e1e2d;
+            --border-color: #2d2d3d;
+            --shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+            --tab-bg: #2a2a3a;
+            --tab-active-bg: #1e1e2d;
+            --button-bg: #4a6583;
+            --button-hover: #3a5573;
+            --success-color: #27ae60;
+            --warning-color: #e67e22;
+            --error-color: #c0392b;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            transition: background-color 0.3s, color 0.3s;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, var(--primary-color), #1a1a2e);
+            color: white;
+            box-shadow: var(--shadow);
+            position: relative;
+            z-index: 10;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            font-weight: bold;
+            font-size: 1.6rem;
+            gap: 12px;
+        }
+        
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--secondary-color), var(--accent-color));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .control-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+        
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+        
+        .settings-menu {
+            position: absolute;
+            right: 20px;
+            top: 100%;
+            background-color: var(--panel-bg);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            padding: 15px;
+            width: 240px;
+            z-index: 100;
+            display: none;
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+        }
+        
+        .settings-menu.show {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .settings-title {
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: var(--text-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .language-option {
+            padding: 10px 12px;
+            cursor: pointer;
+            border-radius: 8px;
+            margin: 6px 0;
+            display: flex;
+            align-items: center;
+            transition: background 0.2s;
+        }
+        
+        .language-option:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+        
+        .dark-theme .language-option:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        
+        .language-flag {
+            width: 24px;
+            height: 18px;
+            margin-right: 12px;
+            border-radius: 3px;
+            object-fit: cover;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            max-width: 1600px;
+            margin: 20px auto;
+            padding: 0 20px;
+            flex: 1;
+            width: 100%;
+        }
+        
+        .editor-pane, .preview-pane {
+            flex: 1;
+            min-width: 300px;
+            background-color: var(--panel-bg);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid var(--border-color);
+        }
+        
+        .pane-header {
+            background: linear-gradient(to right, var(--primary-color), #2c3e50);
+            color: white;
+            padding: 12px 20px;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .pane-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .pane-action-btn {
+            background: rgba(255, 255, 255, 0.15);
+            border: none;
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .pane-action-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-1px);
+        }
+        
+        .code-tabs {
+            display: flex;
+            background-color: var(--tab-bg);
+            padding: 5px 5px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .code-tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 8px 8px 0 0;
+            background-color: var(--tab-bg);
+            margin-right: 4px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .code-tab.active {
+            background-color: var(--tab-active-bg);
+            font-weight: 600;
+        }
+        
+        .code-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--secondary-color);
+        }
+        
+        .editor-container {
+            flex: 1;
+            position: relative;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 100%;
+            border: none;
+            padding: 20px;
+            box-sizing: border-box;
+            font-family: 'Fira Code', 'Courier New', monospace;
+            resize: none;
+            outline: none;
+            background-color: var(--panel-bg);
+            color: var(--text-color);
+            font-size: 15px;
+            line-height: 1.6;
+            tab-size: 4;
+        }
+        
+        .code-editor {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .preview-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        iframe {
+            flex: 1;
+            width: 100%;
+            border: none;
+            background-color: white;
+        }
+        
+        .dark-theme iframe {
+            background-color: #1a1a1a;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+            font-size: 14px;
+            padding: 20px;
+            background-color: var(--primary-color);
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .status-bar {
+            padding: 8px 20px;
+            background-color: var(--tab-bg);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            color: #777;
+        }
+        
+        .dark-theme .status-bar {
+            color: #aaa;
+        }
+        
+        .theme-indicator {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .theme-indicator i {
+            font-size: 12px;
+        }
+        
+        .button {
+            background-color: var(--button-bg);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .button:hover {
+            background-color: var(--button-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .button-outline {
+            background: transparent;
+            border: 1px solid var(--button-bg);
+            color: var(--button-bg);
+        }
+        
+        .button-outline:hover {
+            background: rgba(52, 152, 219, 0.1);
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            background: var(--success-color);
+            color: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 1000;
+            opacity: 0;
+            transform: translateX(100px);
+            transition: all 0.3s;
+        }
+        
+        .notification.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .editor-pane, .preview-pane {
+                min-width: 100%;
+            }
+            
+            .top-bar {
+                padding: 10px 15px;
+            }
+            
+            .logo span {
+                font-size: 1.2rem;
+            }
+        }
+        
+        /* 动画效果 */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .pulse {
+            animation: pulse 1.5s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="top-bar">
+        <div class="logo">
+            <div class="logo-icon"><i class="fas fa-code"></i></div>
+            <span>CodeLive Pro</span>
+        </div>
+        <div class="controls">
+            <button class="control-btn" id="new-btn" title="新建项目"><i class="fas fa-file"></i></button>
+            <button class="control-btn" id="save-btn" title="保存项目"><i class="fas fa-save"></i></button>
+            <button class="control-btn" id="export-btn" title="导出HTML"><i class="fas fa-download"></i></button>
+            <button class="control-btn" id="theme-btn" title="切换主题"><i class="fas fa-moon"></i></button>
+            <button class="control-btn" id="settings-btn" title="设置"><i class="fas fa-cog"></i></button>
+        </div>
+        <div class="settings-menu" id="settings-menu">
+            <div class="settings-title"><i class="fas fa-language"></i> 语言设置</div>
+            <div class="language-option" onclick="changeUILanguage('zh')">
+                <img src="https://flagcdn.com/w20/cn.png" class="language-flag" alt="简体中文">
+                简体中文 (中国)
+            </div>
+            <div class="language-option" onclick="changeUILanguage('zh-TW')">
+                <img src="https://flagcdn.com/w20/tw.png" class="language-flag" alt="繁體中文">
+                繁體中文 (台灣)
+            </div>
+            <div class="language-option" onclick="changeUILanguage('en')">
+                <img src="https://flagcdn.com/w20/us.png" class="language-flag" alt="English">
+                English (USA)
+            </div>
+            <div class="language-option" onclick="changeUILanguage('fr')">
+                <img src="https://flagcdn.com/w20/fr.png" class="language-flag" alt="Français">
+                Français (France)
+            </div>
+            <div class="language-option" onclick="changeUILanguage('ru')">
+                <img src="https://flagcdn.com/w20/ru.png" class="language-flag" alt="Русский">
+                Русский (Россия)
+            </div>
+            <div class="language-option" onclick="changeUILanguage('ms')">
+                <img src="https://flagcdn.com/w20/my.png" class="language-flag" alt="Bahasa Melayu">
+                Bahasa Melayu (Malaysia)
+            </div>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="editor-pane">
+            <div class="pane-header">
+                <span id="editor-title">编辑器</span>
+                <div class="pane-actions">
+                    <button class="pane-action-btn" title="格式化代码"><i class="fas fa-broom"></i></button>
+                    <button class="pane-action-btn" title="全屏"><i class="fas fa-expand"></i></button>
+                </div>
+            </div>
+            
+            <div class="code-tabs">
+                <div class="code-tab active" onclick="switchTab('html')">
+                    <i class="fab fa-html5"></i> HTML
+                </div>
+                <div class="code-tab" onclick="switchTab('css')">
+                    <i class="fab fa-css3-alt"></i> CSS
+                </div>
+                <div class="code-tab" onclick="switchTab('js')">
+                    <i class="fab fa-js"></i> JavaScript
+                </div>
+            </div>
+            
+            <div class="editor-container">
+                <textarea id="html-editor" class="code-editor" oninput="runCode()"><!-- 在这里输入HTML代码 -->
+<div class="hero">
+  <h1 id="greeting">你好，世界!</h1>
+  <p>这是一个功能强大的实时HTML编辑器</p>
+  <div class="buttons">
+    <button class="button" onclick="changeText()"><i class="fas fa-magic"></i> 点击我</button>
+    <button class="button button-outline" onclick="showNotification('主题已切换!', 'success')">
+      <i class="fas fa-palette"></i> 主题演示
+    </button>
+  </div>
+</div>
+<div class="features">
+  <div class="feature">
+    <i class="fas fa-sync-alt"></i>
+    <h3>实时预览</h3>
+    <p>代码修改立即反映在预览窗格</p>
+  </div>
+  <div class="feature">
+    <i class="fas fa-moon"></i>
+    <h3>主题切换</h3>
+    <p>支持明亮/暗黑双主题模式</p>
+  </div>
+  <div class="feature">
+    <i class="fas fa-globe"></i>
+    <h3>多语言支持</h3>
+    <p>内置6种语言界面</p>
+  </div>
+</div></textarea>
+                
+                <textarea id="css-editor" class="code-editor hidden" oninput="runCode()">/* 在这里输入CSS代码 */
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  padding: 30px;
+  line-height: 1.6;
+  max-width: 1000px;
+  margin: 0 auto;
+  background: linear-gradient(135deg, #f5f7fa, #e4e7eb);
+}
+
+.dark-theme body {
+  background: linear-gradient(135deg, #1a1a2e, #16213e);
+}
+
+.hero {
+  text-align: center;
+  padding: 40px 20px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 16px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+  margin-bottom: 40px;
+}
+
+.dark-theme .hero {
+  background: rgba(30, 30, 45, 0.9);
+}
+
+.hero h1 {
+  font-size: 2.8rem;
+  color: #2c3e50;
+  margin-bottom: 20px;
+  background: linear-gradient(90deg, #3498db, #e74c3c);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  padding-bottom: 15px;
+}
+
+.dark-theme .hero h1 {
+  color: #e0e0e0;
+}
+
+.hero p {
+  font-size: 1.2rem;
+  color: #555;
+  max-width: 700px;
+  margin: 0 auto 30px;
+}
+
+.dark-theme .hero p {
+  color: #bbb;
+}
+
+.buttons {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 25px;
+  margin-top: 40px;
+}
+
+.feature {
+  background: white;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+  text-align: center;
+  transition: transform 0.3s;
+}
+
+.dark-theme .feature {
+  background: #1e1e2d;
+}
+
+.feature:hover {
+  transform: translateY(-5px);
+}
+
+.feature i {
+  font-size: 2.5rem;
+  color: #3498db;
+  margin-bottom: 15px;
+}
+
+.feature h3 {
+  font-size: 1.4rem;
+  margin-bottom: 12px;
+  color: #2c3e50;
+}
+
+.dark-theme .feature h3 {
+  color: #e0e0e0;
+}
+
+.feature p {
+  color: #666;
+  line-height: 1.5;
+}
+
+.dark-theme .feature p {
+  color: #aaa;
+}</textarea>
+                
+                <textarea id="js-editor" class="code-editor hidden" oninput="runCode()">// 在这里输入JavaScript代码
+function changeText() {
+  const greetings = {
+    'zh': ["你好!", "欢迎使用编辑器!", "代码运行成功!", "再见!"],
+    'zh-TW': ["你好!", "歡迎使用編輯器!", "代碼運行成功!", "再見!"],
+    'en': ["Hello!", "Welcome to the editor!", "Code executed successfully!", "Goodbye!"],
+    'fr': ["Bonjour!", "Bienvenue dans l'éditeur!", "Code exécuté avec succès!", "Au revoir!"],
+    'ru': ["Привет!", "Добро пожаловать в редактор!", "Код успешно выполнен!", "До свидания!"],
+    'ms': ["Helo!", "Selamat datang di editor!", "Kod berjaya dilaksanakan!", "Selamat tinggal!"]
+  };
+  
+  const lang = currentUILanguage || 'zh';
+  const texts = greetings[lang] || greetings['en'];
+  const randomIndex = Math.floor(Math.random() * texts.length);
+  
+  const greetingEl = document.getElementById('greeting');
+  greetingEl.textContent = texts[randomIndex];
+  greetingEl.classList.add('pulse');
+  
+  setTimeout(() => {
+    greetingEl.classList.remove('pulse');
+  }, 1500);
+}
+
+function showNotification(message, type) {
+  const notification = document.getElementById('notification');
+  notification.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i> ${message}`;
+  notification.className = `notification ${type}`;
+  notification.classList.add('show');
+  
+  setTimeout(() => {
+    notification.classList.remove('show');
+  }, 3000);
+}</textarea>
+            </div>
+            
+            <div class="status-bar">
+                <div><i class="fas fa-code"></i> <span id="char-count">0</span> 字符</div>
+                <div class="theme-indicator"><i class="fas fa-circle"></i> <span id="theme-indicator">明亮</span> 主题</div>
+            </div>
+        </div>
+        
+        <div class="preview-pane">
+            <div class="pane-header">
+                <span id="preview-title">实时预览</span>
+                <div class="pane-actions">
+                    <button class="pane-action-btn" title="刷新预览"><i class="fas fa-redo"></i></button>
+                    <button class="pane-action-btn" title="全屏"><i class="fas fa-expand"></i></button>
+                </div>
+            </div>
+            <div class="preview-container">
+                <iframe id="preview-frame"></iframe>
+            </div>
+            <div class="status-bar">
+                <div><i class="fas fa-sync-alt"></i> 实时更新</div>
+                <div><i class="fas fa-check-circle"></i> 无错误</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p id="footer-text">CodeLive Pro - 强大的实时HTML编辑器</p>
+    </div>
+
+    <div id="notification" class="notification"></div>
+
+    <script>
+        // 当前界面语言
+        let currentUILanguage = 'zh';
+        let isDarkTheme = false;
+        
+        // 语言资源
+        const languageResources = {
+            'zh': {
+                editorTitle: "编辑器",
+                previewTitle: "实时预览",
+                footerText: "CodeLive Pro - 强大的实时HTML编辑器",
+                settingsTitle: "语言设置",
+                themeLight: "明亮",
+                themeDark: "暗黑"
+            },
+            'zh-TW': {
+                editorTitle: "編輯器",
+                previewTitle: "即時預覽",
+                footerText: "CodeLive Pro - 強大的即時HTML編輯器",
+                settingsTitle: "語言設定",
+                themeLight: "明亮",
+                themeDark: "暗黑"
+            },
+            'en': {
+                editorTitle: "Editor",
+                previewTitle: "Live Preview",
+                footerText: "CodeLive Pro - Powerful Real-time HTML Editor",
+                settingsTitle: "Language Settings",
+                themeLight: "Light",
+                themeDark: "Dark"
+            },
+            'fr': {
+                editorTitle: "Éditeur",
+                previewTitle: "Aperçu en direct",
+                footerText: "CodeLive Pro - Éditeur HTML puissant en temps réel",
+                settingsTitle: "Paramètres de langue",
+                themeLight: "Clair",
+                themeDark: "Sombre"
+            },
+            'ru': {
+                editorTitle: "Редактор",
+                previewTitle: "Прямая трансляция",
+                footerText: "CodeLive Pro - Мощный редактор HTML в реальном времени",
+                settingsTitle: "Настройки языка",
+                themeLight: "Светлый",
+                themeDark: "Темный"
+            },
+            'ms': {
+                editorTitle: "Editor",
+                previewTitle: "Pratonton Langsung",
+                footerText: "CodeLive Pro - Editor HTML Masa Nyata Berkuasa",
+                settingsTitle: "Tetapan Bahasa",
+                themeLight: "Cerah",
+                themeDark: "Gelap"
+            }
+        };
+        
+        // DOM 元素
+        const settingsBtn = document.getElementById('settings-btn');
+        const settingsMenu = document.getElementById('settings-menu');
+        const themeBtn = document.getElementById('theme-btn');
+        const newBtn = document.getElementById('new-btn');
+        const saveBtn = document.getElementById('save-btn');
+        const exportBtn = document.getElementById('export-btn');
+        const notification = document.getElementById('notification');
+        const charCount = document.getElementById('char-count');
+        
+        // 初始化
+        function init() {
+            // 加载保存的主题
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            if (savedTheme === 'dark') {
+                document.body.classList.add('dark-theme');
+                isDarkTheme = true;
+                themeBtn.innerHTML = '<i class="fas fa-sun"></i>';
+            }
+            
+            // 更新主题指示器
+            updateThemeIndicator();
+            
+            // 加载保存的代码
+            loadSavedCode();
+            
+            // 更新界面
+            updateUI();
+            
+            // 运行初始代码
+            runCode();
+            
+            // 添加事件监听器
+            settingsBtn.addEventListener('click', toggleSettings);
+            themeBtn.addEventListener('click', toggleTheme);
+            newBtn.addEventListener('click', newProject);
+            saveBtn.addEventListener('click', saveProject);
+            exportBtn.addEventListener('click', exportHTML);
+            
+            // 监听字符计数
+            document.querySelectorAll('.code-editor').forEach(editor => {
+                editor.addEventListener('input', updateCharCount);
+            });
+            
+            // 初始字符计数
+            updateCharCount();
+        }
+        
+        // 切换设置菜单显示
+        function toggleSettings() {
+            settingsMenu.classList.toggle('show');
+            
+            // 点击其他地方关闭菜单
+            if (settingsMenu.classList.contains('show')) {
+                setTimeout(() => {
+                    document.addEventListener('click', closeSettingsOnClickOutside);
+                }, 0);
+            } else {
+                document.removeEventListener('click', closeSettingsOnClickOutside);
+            }
+        }
+        
+        function closeSettingsOnClickOutside(e) {
+            if (!settingsMenu.contains(e.target) && e.target !== settingsBtn) {
+                settingsMenu.classList.remove('show');
+                document.removeEventListener('click', closeSettingsOnClickOutside);
+            }
+        }
+        
+        // 切换界面语言
+        function changeUILanguage(lang) {
+            currentUILanguage = lang;
+            updateUI();
+            runCode();
+            settingsMenu.classList.remove('show');
+            showNotification(`语言已切换至: ${getLanguageName(lang)}`, 'success');
+        }
+        
+        function getLanguageName(lang) {
+            const names = {
+                'zh': '简体中文',
+                'zh-TW': '繁體中文',
+                'en': 'English',
+                'fr': 'Français',
+                'ru': 'Русский',
+                'ms': 'Bahasa Melayu'
+            };
+            return names[lang] || lang;
+        }
+        
+        // 更新界面文本
+        function updateUI() {
+            const resources = languageResources[currentUILanguage] || languageResources['zh'];
+            document.getElementById('editor-title').textContent = resources.editorTitle;
+            document.getElementById('preview-title').textContent = resources.previewTitle;
+            document.getElementById('footer-text').textContent = resources.footerText;
+            document.querySelector('.settings-title').innerHTML = `<i class="fas fa-language"></i> ${resources.settingsTitle}`;
+            updateThemeIndicator();
+        }
+        
+        // 切换主题
+        function toggleTheme() {
+            isDarkTheme = !isDarkTheme;
+            document.body.classList.toggle('dark-theme');
+            
+            // 更新按钮图标
+            themeBtn.innerHTML = isDarkTheme ? 
+                '<i class="fas fa-sun"></i>' : 
+                '<i class="fas fa-moon"></i>';
+            
+            // 保存主题设置
+            localStorage.setItem('theme', isDarkTheme ? 'dark' : 'light');
+            
+            // 更新主题指示器
+            updateThemeIndicator();
+            
+            // 显示通知
+            const resources = languageResources[currentUILanguage] || languageResources['zh'];
+            const themeName = isDarkTheme ? resources.themeDark : resources.themeLight;
+            showNotification(`已切换到${themeName}主题`, 'success');
+            
+            // 运行代码以更新预览
+            runCode();
+        }
+        
+        function updateThemeIndicator() {
+            const resources = languageResources[currentUILanguage] || languageResources['zh'];
+            const themeText = isDarkTheme ? resources.themeDark : resources.themeLight;
+            document.getElementById('theme-indicator').textContent = themeText;
+        }
+        
+        // 切换代码标签页
+        function switchTab(lang) {
+            document.querySelectorAll('.code-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.code-editor').forEach(editor => {
+                editor.classList.add('hidden');
+            });
+            
+            const tabIndex = lang === 'html' ? 1 : lang === 'css' ? 2 : 3;
+            document.querySelector(`.code-tab:nth-child(${tabIndex})`).classList.add('active');
+            document.getElementById(`${lang}-editor`).classList.remove('hidden');
+            
+            // 更新字符计数
+            updateCharCount();
+        }
+        
+        // 更新字符计数
+        function updateCharCount() {
+            const activeEditor = document.querySelector('.code-editor:not(.hidden)');
+            const count = activeEditor ? activeEditor.value.length : 0;
+            charCount.textContent = count.toLocaleString();
+        }
+        
+        // 防抖函数，避免频繁执行
+        let debounceTimer;
+        function debounce(func, delay) {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(func, delay);
+        }
+        
+        // 运行代码
+        function runCode() {
+            debounce(() => {
+                const html = document.getElementById('html-editor').value;
+                const css = document.getElementById('css-editor').value;
+                const js = document.getElementById('js-editor').value;
+                
+                const previewDoc = document.getElementById('preview-frame').contentDocument || 
+                                 document.getElementById('preview-frame').contentWindow.document;
+                
+                previewDoc.open();
+                previewDoc.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <meta charset="UTF-8">
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <title>预览</title>
+                        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+                        <style>
+                            ${css}
+                        </style>
+                    </head>
+                    <body class="${isDarkTheme ? 'dark-theme' : ''}">
+                        ${html}
+                        <script>
+                            ${js}
+                        <\/script>
+                    </body>
+                    </html>
+                `);
+                previewDoc.close();
+                
+                // 更新字符计数
+                updateCharCount();
+            }, 300);
+        }
+        
+        // 新建项目
+        function newProject() {
+            if (confirm("确定要创建新项目吗？当前未保存的内容将会丢失。")) {
+                document.getElementById('html-editor').value = '';
+                document.getElementById('css-editor').value = '';
+                document.getElementById('js-editor').value = '';
+                runCode();
+                showNotification("已创建新项目", 'success');
+            }
+        }
+        
+        // 保存项目
+        function saveProject() {
+            const html = document.getElementById('html-editor').value;
+            const css = document.getElementById('css-editor').value;
+            const js = document.getElementById('js-editor').value;
+            
+            localStorage.setItem('htmlCode', html);
+            localStorage.setItem('cssCode', css);
+            localStorage.setItem('jsCode', js);
+            
+            showNotification("项目已保存到本地存储", 'success');
+        }
+        
+        // 加载保存的代码
+        function loadSavedCode() {
+            if (localStorage.getItem('htmlCode')) {
+                document.getElementById('html-editor').value = localStorage.getItem('htmlCode');
+                document.getElementById('css-editor').value = localStorage.getItem('cssCode');
+                document.getElementById('js-editor').value = localStorage.getItem('jsCode');
+            }
+        }
+        
+        // 导出HTML
+        function exportHTML() {
+            const html = document.getElementById('html-editor').value;
+            const css = document.getElementById('css-editor').value;
+            const js = document.getElementById('js-editor').value;
+            
+            const fullHtml = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exported Project</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        ${css}
+    </style>
+</head>
+<body>
+    ${html}
+    <script>
+        ${js}
+    <\/script>
+</body>
+</html>`;
+            
+            const blob = new Blob([fullHtml], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'code-project.html';
+            document.body.appendChild(a);
+            a.click();
+            
+            // 清理
+            setTimeout(() => {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 0);
+            
+            showNotification("项目已导出为HTML文件", 'success');
+        }
+        
+        // 显示通知
+        function showNotification(message, type) {
+            notification.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+        
+        // 启动应用
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
