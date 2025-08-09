@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>实时HTML编辑器</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --bg-color: #f5f5f5;
+            --text-color: #333;
+            --panel-bg: white;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+        }
+        
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background-color: var(--primary-color);
+            color: white;
+            box-shadow: var(--shadow);
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+        
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            margin-right: 10px;
+            background: linear-gradient(135deg, var(--secondary-color), var(--accent-color));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .settings {
+            position: relative;
+        }
+        
+        .settings-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            transition: background 0.3s;
+        }
+        
+        .settings-btn:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        .settings-menu {
+            position: absolute;
+            right: 0;
+            top: 100%;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            padding: 15px;
+            width: 220px;
+            z-index: 100;
+            display: none;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .settings-menu.show {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .settings-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: var(--primary-color);
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+        
+        .language-option {
+            padding: 8px 10px;
+            cursor: pointer;
+            border-radius: 4px;
+            margin: 5px 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .language-option:hover {
+            background-color: #f0f0f0;
+        }
+        
+        .language-flag {
+            width: 20px;
+            height: 15px;
+            margin-right: 10px;
+            border-radius: 2px;
+            object-fit: cover;
+        }
+        
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+        
+        .editor-pane, .preview-pane {
+            flex: 1;
+            min-width: 300px;
+            background-color: var(--panel-bg);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+        
+        .pane-header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 10px 15px;
+            font-weight: bold;
+        }
+        
+        .code-tabs {
+            display: flex;
+            background-color: #e0e0e0;
+            padding: 5px 5px 0;
+        }
+        
+        .code-tab {
+            padding: 8px 15px;
+            cursor: pointer;
+            border-radius: 5px 5px 0 0;
+            background-color: #ddd;
+            margin-right: 5px;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .code-tab.active {
+            background-color: var(--panel-bg);
+            font-weight: bold;
+        }
+        
+        textarea, .code-editor {
+            width: 100%;
+            height: 400px;
+            border: none;
+            padding: 15px;
+            box-sizing: border-box;
+            font-family: 'Fira Code', 'Courier New', monospace;
+            resize: none;
+            outline: none;
+            background-color: var(--panel-bg);
+            color: var(--text-color);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        iframe {
+            width: 100%;
+            height: 450px;
+            border: none;
+            background-color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+            font-size: 14px;
+            padding: 20px;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .editor-pane, .preview-pane {
+                min-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="top-bar">
+        <div class="logo">
+            <div class="logo-icon">E</div>
+            <span>CodeLive</span>
+        </div>
+        <div class="settings">
+            <button class="settings-btn" onclick="toggleSettings()">⚙️</button>
+            <div class="settings-menu" id="settings-menu">
+                <div class="settings-title">语言设置</div>
+                <!-- 联合国五常语言 -->
+                <div class="language-option" onclick="changeUILanguage('zh')">
+                    <img src="https://flagcdn.com/w20/cn.png" class="language-flag" alt="简体中文">
+                    简体中文 (中国)
+                </div>
+                <div class="language-option" onclick="changeUILanguage('zh-TW')">
+                    <img src="https://flagcdn.com/w20/tw.png" class="language-flag" alt="繁體中文">
+                    繁體中文 (台灣)
+                </div>
+                <div class="language-option" onclick="changeUILanguage('en')">
+                    <img src="https://flagcdn.com/w20/us.png" class="language-flag" alt="English">
+                    English (USA)
+                </div>
+                <div class="language-option" onclick="changeUILanguage('fr')">
+                    <img src="https://flagcdn.com/w20/fr.png" class="language-flag" alt="Français">
+                    Français (France)
+                </div>
+                <div class="language-option" onclick="changeUILanguage('ru')">
+                    <img src="https://flagcdn.com/w20/ru.png" class="language-flag" alt="Русский">
+                    Русский (Россия)
+                </div>
+                <!-- 其他语言 -->
+                <div class="language-option" onclick="changeUILanguage('ms')">
+                    <img src="https://flagcdn.com/w20/my.png" class="language-flag" alt="Bahasa Melayu">
+                    Bahasa Melayu (Malaysia)
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="editor-pane">
+            <div class="pane-header" id="editor-title">编辑器</div>
+            
+            <div class="code-tabs">
+                <div class="code-tab active" onclick="switchTab('html')">HTML</div>
+                <div class="code-tab" onclick="switchTab('css')">CSS</div>
+                <div class="code-tab" onclick="switchTab('js')">JavaScript</div>
+            </div>
+            
+            <textarea id="html-editor" class="code-editor" oninput="runCode()"><!-- 在这里输入HTML代码 -->
+<h1 id="greeting">你好，世界!</h1>
+<p>这是一个多语言实时HTML编辑器</p>
+<button onclick="changeText()">点击我</button></textarea>
+            
+            <textarea id="css-editor" class="code-editor hidden" oninput="runCode()">/* 在这里输入CSS代码 */
+body {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+    line-height: 1.6;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+#greeting {
+    color: #2c3e50;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 10px;
+}
+
+button {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+button:hover {
+    background-color: #2980b9;
+}</textarea>
+            
+            <textarea id="js-editor" class="code-editor hidden" oninput="runCode()">// 在这里输入JavaScript代码
+function changeText() {
+    const greetings = {
+        'zh': ["你好!", "欢迎!", "很高兴见到你!", "再见!"],
+        'zh-TW': ["你好!", "歡迎!", "很高興見到你!", "再見!"],
+        'en': ["Hello!", "Welcome!", "Nice to meet you!", "Goodbye!"],
+        'fr': ["Bonjour!", "Bienvenue!", "Enchanté!", "Au revoir!"],
+        'ru': ["Привет!", "Добро пожаловать!", "Рад встрече!", "До свидания!"],
+        'ms': ["Helo!", "Selamat datang!", "Senang bertemu dengan anda!", "Selamat tinggal!"]
+    };
+    
+    const lang = currentUILanguage || 'zh';
+    const texts = greetings[lang] || greetings['en'];
+    const randomIndex = Math.floor(Math.random() * texts.length);
+    document.getElementById('greeting').textContent = texts[randomIndex];
+}</textarea>
+        </div>
+        
+        <div class="preview-pane">
+            <div class="pane-header" id="preview-title">实时预览</div>
+            <iframe id="preview-frame"></iframe>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p id="footer-text">实时HTML编辑器 - 由你创建</p>
+    </div>
+
+    <script>
+        // 当前界面语言
+        let currentUILanguage = 'zh';
+        
+        // 语言资源
+        const languageResources = {
+            'zh': {
+                editorTitle: "编辑器",
+                previewTitle: "实时预览",
+                footerText: "实时HTML编辑器 - 由你创建",
+                settingsTitle: "语言设置"
+            },
+            'zh-TW': {
+                editorTitle: "編輯器",
+                previewTitle: "即時預覽",
+                footerText: "即時HTML編輯器 - 由你創建",
+                settingsTitle: "語言設定"
+            },
+            'en': {
+                editorTitle: "Editor",
+                previewTitle: "Live Preview",
+                footerText: "Live HTML Editor - Created by you",
+                settingsTitle: "Language Settings"
+            },
+            'fr': {
+                editorTitle: "Éditeur",
+                previewTitle: "Aperçu en direct",
+                footerText: "Éditeur HTML en direct - Créé par vous",
+                settingsTitle: "Paramètres de langue"
+            },
+            'ru': {
+                editorTitle: "Редактор",
+                previewTitle: "Прямая трансляция",
+                footerText: "Редактор HTML в реальном времени - Создано вами",
+                settingsTitle: "Настройки языка"
+            },
+            'ms': {
+                editorTitle: "Editor",
+                previewTitle: "Pratonton Langsung",
+                footerText: "Editor HTML Masa Nyata - Dicipta oleh anda",
+                settingsTitle: "Tetapan Bahasa"
+            }
+        };
+        
+        // 切换设置菜单显示
+        function toggleSettings() {
+            const menu = document.getElementById('settings-menu');
+            menu.classList.toggle('show');
+            
+            // 点击其他地方关闭菜单
+            if (menu.classList.contains('show')) {
+                setTimeout(() => {
+                    document.addEventListener('click', closeSettingsOnClickOutside);
+                }, 0);
+            } else {
+                document.removeEventListener('click', closeSettingsOnClickOutside);
+            }
+        }
+        
+        function closeSettingsOnClickOutside(e) {
+            const menu = document.getElementById('settings-menu');
+            const settingsBtn = document.querySelector('.settings-btn');
+            
+            if (!menu.contains(e.target) && e.target !== settingsBtn) {
+                menu.classList.remove('show');
+                document.removeEventListener('click', closeSettingsOnClickOutside);
+            }
+        }
+        
+        // 切换界面语言
+        function changeUILanguage(lang) {
+            currentUILanguage = lang;
+            updateUI();
+            runCode();
+            document.getElementById('settings-menu').classList.remove('show');
+        }
+        
+        // 更新界面文本
+        function updateUI() {
+            const resources = languageResources[currentUILanguage] || languageResources['zh'];
+            document.getElementById('editor-title').textContent = resources.editorTitle;
+            document.getElementById('preview-title').textContent = resources.previewTitle;
+            document.getElementById('footer-text').textContent = resources.footerText;
+            document.querySelector('.settings-title').textContent = resources.settingsTitle;
+        }
+        
+        // 切换代码标签页
+        function switchTab(lang) {
+            document.querySelectorAll('.code-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.code-editor').forEach(editor => {
+                editor.classList.add('hidden');
+            });
+            
+            document.querySelector(`.code-tab:nth-child(${lang === 'html' ? 1 : lang === 'css' ? 2 : 3})`).classList.add('active');
+            document.getElementById(`${lang}-editor`).classList.remove('hidden');
+        }
+        
+        // 防抖函数，避免频繁执行
+        let debounceTimer;
+        function debounce(func, delay) {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(func, delay);
+        }
+        
+        // 运行代码
+        function runCode() {
+            debounce(() => {
+                const html = document.getElementById('html-editor').value;
+                const css = document.getElementById('css-editor').value;
+                const js = document.getElementById('js-editor').value;
+                
+                const previewDoc = document.getElementById('preview-frame').contentDocument || 
+                                 document.getElementById('preview-frame').contentWindow.document;
+                
+                previewDoc.open();
+                previewDoc.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <style>
+                            ${css}
+                        </style>
+                    </head>
+                    <body>
+                        ${html}
+                        <script>
+                            ${js}
+                        <\/script>
+                    </body>
+                    </html>
+                `);
+                previewDoc.close();
+            }, 300);
+        }
+        
+        // 初始化
+        updateUI();
+        runCode();
+    </script>
+</body>
+</html>
